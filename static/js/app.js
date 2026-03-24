@@ -238,6 +238,50 @@ function renderCalendar() {
 
         grid.appendChild(cell);
     });
+
+    renderTotals();
+}
+
+function renderTotals() {
+    const bar = document.getElementById("totalsBar");
+    bar.innerHTML = "";
+
+    // Sum hours per doctor
+    const doctorTotals = {};
+    selectionsData.forEach((s) => {
+        const key = s.doctor_id;
+        if (!doctorTotals[key]) {
+            doctorTotals[key] = { full_name: s.full_name, specialty: s.specialty, hours: 0 };
+        }
+        doctorTotals[key].hours += s.duty_hours;
+    });
+
+    // Sort by specialty then name
+    const sorted = Object.values(doctorTotals).sort((a, b) =>
+        a.specialty.localeCompare(b.specialty) || a.full_name.localeCompare(b.full_name)
+    );
+
+    // Also show doctors with 0 hours
+    allDoctors.forEach((d) => {
+        if (!selectionsData.some((s) => s.doctor_id === d.id)) {
+            sorted.push({ full_name: d.full_name, specialty: d.specialty, hours: 0 });
+        }
+    });
+    sorted.sort((a, b) =>
+        a.specialty.localeCompare(b.specialty) || a.full_name.localeCompare(b.full_name)
+    );
+
+    sorted.forEach((d) => {
+        const card = document.createElement("div");
+        card.className = "total-card" + (d.hours > 0 ? " has-hours" : "");
+
+        card.innerHTML = `
+            <span class="spec-name">${d.specialty}</span>
+            <span class="doc-name">${d.full_name}</span>
+            <span class="total-hours">${d.hours}s</span>
+        `;
+        bar.appendChild(card);
+    });
 }
 
 // --- Selection toggle ---
@@ -319,6 +363,21 @@ function showPreview() {
 
         html += "</tr>";
     });
+
+    // Total hours row
+    const totalsBySpec = {};
+    specialties.forEach((spec) => { totalsBySpec[spec] = 0; });
+    selectionsData.forEach((s) => {
+        totalsBySpec[s.specialty] = (totalsBySpec[s.specialty] || 0) + s.duty_hours;
+    });
+
+    html += '<tr class="workday-row" style="font-weight:700; border-top:2px solid #1a5276;">';
+    html += '<td colspan="3" style="text-align:right;">Toplam Saat</td>';
+    specialties.forEach((spec) => {
+        const total = totalsBySpec[spec] || 0;
+        html += `<td class="has-assignment">${total > 0 ? total + "s" : "-"}</td>`;
+    });
+    html += "</tr>";
 
     html += "</tbody></table>";
     content.innerHTML = html;

@@ -98,6 +98,33 @@ def generate_excel(year, month):
             if assigned:
                 cell.value = assigned
 
+    # Total hours row
+    totals_row = header_row + 1 + len(days)
+    totals_by_spec = {spec: 0 for spec in specialties}
+    for s in selections:
+        totals_by_spec[s["specialty"]] = totals_by_spec.get(s["specialty"], 0) + s["duty_hours"]
+
+    total_font = Font(bold=True, size=11)
+    total_fill = PatternFill("solid", fgColor="B4C6E7")
+
+    cell = ws.cell(row=totals_row, column=1, value="Toplam Saat")
+    cell.font = total_font
+    cell.fill = total_fill
+    cell.border = thin_border
+    cell.alignment = center_align
+    for col_idx in [2, 3]:
+        cell = ws.cell(row=totals_row, column=col_idx)
+        cell.fill = total_fill
+        cell.border = thin_border
+    for col_idx, spec in enumerate(specialties, start=4):
+        cell = ws.cell(row=totals_row, column=col_idx)
+        cell.font = total_font
+        cell.fill = total_fill
+        cell.border = thin_border
+        cell.alignment = center_align
+        total = totals_by_spec.get(spec, 0)
+        cell.value = f"{total} saat" if total > 0 else "-"
+
     # Auto-adjust column widths
     from openpyxl.cell.cell import MergedCell
     for col in ws.columns:

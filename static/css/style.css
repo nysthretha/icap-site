@@ -316,6 +316,61 @@ body {
     color: #b71c1c;
 }
 
+/* Totals bar */
+.totals-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    justify-content: center;
+    margin: 1rem 0;
+    padding: 1rem;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+}
+
+.total-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: #f8f9fa;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    min-width: 100px;
+    transition: all 0.3s;
+}
+
+.total-card.has-hours {
+    background: #e8f5e9;
+    border-color: #27ae60;
+}
+
+.total-card .spec-name {
+    font-size: 0.7rem;
+    color: #666;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.total-card .doc-name {
+    font-size: 0.75rem;
+    color: #333;
+    margin-top: 0.15rem;
+}
+
+.total-card .total-hours {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #1a5276;
+    margin-top: 0.2rem;
+}
+
+.total-card.has-hours .total-hours {
+    color: #1b5e20;
+}
+
 /* Action bar */
 .action-bar {
     display: flex;
