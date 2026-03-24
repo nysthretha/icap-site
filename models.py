@@ -1,42 +1,75 @@
-import sqlite3
 import os
+import psycopg2
+import psycopg2.extras
 from werkzeug.security import generate_password_hash, check_password_hash
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "instance", "oncall.db")
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
 
 def get_db():
     """Get a database connection."""
-    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA foreign_keys = ON")
+    conn = psycopg2.connect(DATABASE_URL)
     return conn
+
+
+def query(conn, sql, params=None):
+    """Execute a query and return rows as list of dicts."""
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    cur.execute(sql, params or ())
+    try:
+        rows = cur.fetchall()
+    except psycopg2.ProgrammingError:
+        rows = []
+    cur.close()
+    return rows
+
+
+def query_one(conn, sql, params=None):
+    """Execute a query and return one row as dict or None."""
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    cur.execute(sql, params or ())
+    try:
+        row = cur.fetchone()
+    except psycopg2.ProgrammingError:
+        row = None
+    cur.close()
+    return dict(row) if row else None
+
+
+def execute(conn, sql, params=None):
+    """Execute a statement and return rowcount."""
+    cur = conn.cursor()
+    cur.execute(sql, params or ())
+    rowcount = cur.rowcount
+    cur.close()
+    return rowcount
 
 
 def init_db():
     """Create tables if they don't exist."""
     conn = get_db()
-    conn.executescript("""
+    cur = conn.cursor()
+    cur.execute("""
         CREATE TABLE IF NOT EXISTS doctors (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             username TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
             full_name TEXT NOT NULL,
             specialty TEXT NOT NULL
         );
-
+    """)
+    cur.execute("""
         CREATE TABLE IF NOT EXISTS selections (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            doctor_id INTEGER NOT NULL,
+            id SERIAL PRIMARY KEY,
+            doctor_id INTEGER NOT NULL REFERENCES doctors(id),
             date TEXT NOT NULL,
             duty_hours INTEGER NOT NULL,
             is_finalized INTEGER DEFAULT 0,
-            created_at TEXT DEFAULT (datetime('now')),
-            FOREIGN KEY (doctor_id) REFERENCES doctors(id),
+            created_at TIMESTAMP DEFAULT NOW(),
             UNIQUE(doctor_id, date)
         );
-
+    """)
+    cur.execute("""
         CREATE TABLE IF NOT EXISTS schedule_status (
             month TEXT PRIMARY KEY,
             is_finalized INTEGER DEFAULT 0,
@@ -44,14 +77,15 @@ def init_db():
         );
     """)
     conn.commit()
+    cur.close()
     conn.close()
 
 
 def seed_doctors():
     """Insert sample doctors if the table is empty."""
     conn = get_db()
-    count = conn.execute("SELECT COUNT(*) FROM doctors").fetchone()[0]
-    if count == 0:
+    row = query_one(conn, "SELECT COUNT(*) as count FROM doctors")
+    if row["count"] == 0:
         doctors = [
             ("kkurt", "nobet2026", "Kemal Kurt", "Dahiliye"),
             ("aaltintas", "icap2026", "Ayfer Altintas", "Dahiliye"),
@@ -65,8 +99,8 @@ def seed_doctors():
             ("aatsiz", "acil2026", "Ahmet Atsiz", "Acil"),
         ]
         for username, password, full_name, specialty in doctors:
-            conn.execute(
-                "INSERT INTO doctors (username, password_hash, full_name, specialty) VALUES (?, ?, ?, ?)",
+            execute(conn,
+                "INSERT INTO doctors (username, password_hash, full_name, specialty) VALUES (%s, %s, %s, %s)",
                 (username, generate_password_hash(password), full_name, specialty),
             )
         conn.commit()
@@ -76,87 +110,78 @@ def seed_doctors():
 def authenticate(username, password):
     """Return doctor row if credentials are valid, else None."""
     conn = get_db()
-    doctor = conn.execute(
-        "SELECT * FROM doctors WHERE username = ?", (username,)
-    ).fetchone()
+    doctor = query_one(conn, "SELECT * FROM doctors WHERE username = %s", (username,))
     conn.close()
     if doctor and check_password_hash(doctor["password_hash"], password):
-        return dict(doctor)
+        return doctor
     return None
 
 
 def get_doctor_by_id(doctor_id):
     conn = get_db()
-    doctor = conn.execute("SELECT * FROM doctors WHERE id = ?", (doctor_id,)).fetchone()
+    doctor = query_one(conn, "SELECT * FROM doctors WHERE id = %s", (doctor_id,))
     conn.close()
-    return dict(doctor) if doctor else None
+    return doctor
 
 
 def get_all_doctors():
     conn = get_db()
-    rows = conn.execute("SELECT id, username, full_name, specialty FROM doctors").fetchall()
+    rows = query(conn, "SELECT id, username, full_name, specialty FROM doctors")
     conn.close()
-    return [dict(r) for r in rows]
+    return rows
 
 
 def get_selections_for_month(year, month):
     """Return all selections for a given month with doctor info."""
-    month_prefix = f"{year}-{month:02d}"
+    month_prefix = f"{year}-{month:02d}%"
     conn = get_db()
-    rows = conn.execute("""
+    rows = query(conn, """
         SELECT s.id, s.date, s.duty_hours, s.is_finalized,
                d.id as doctor_id, d.full_name, d.specialty
         FROM selections s
         JOIN doctors d ON s.doctor_id = d.id
-        WHERE s.date LIKE ?
+        WHERE s.date LIKE %s
         ORDER BY s.date
-    """, (month_prefix + "%",)).fetchall()
+    """, (month_prefix,))
     conn.close()
-    return [dict(r) for r in rows]
+    return rows
 
 
 def add_selection(doctor_id, date_str, duty_hours):
     """Add a selection. Returns (success, message)."""
     conn = get_db()
     try:
-        conn.execute("BEGIN IMMEDIATE")
-
         # Get doctor's specialty
-        doctor = conn.execute(
-            "SELECT specialty FROM doctors WHERE id = ?", (doctor_id,)
-        ).fetchone()
+        doctor = query_one(conn, "SELECT specialty FROM doctors WHERE id = %s", (doctor_id,))
         if not doctor:
-            conn.rollback()
             conn.close()
             return False, "Doktor bulunamadi."
 
         # Check if month is finalized
         month_str = date_str[:7]
-        status = conn.execute(
-            "SELECT is_finalized FROM schedule_status WHERE month = ?", (month_str,)
-        ).fetchone()
+        status = query_one(conn,
+            "SELECT is_finalized FROM schedule_status WHERE month = %s", (month_str,))
         if status and status["is_finalized"]:
-            conn.rollback()
             conn.close()
             return False, "Bu ay icin nobet cizelgesi kesinlestirilmis."
 
         # Check specialty conflict
-        conflict = conn.execute("""
+        conflict = query_one(conn, """
             SELECT d.full_name FROM selections s
             JOIN doctors d ON s.doctor_id = d.id
-            WHERE s.date = ? AND d.specialty = ? AND s.doctor_id != ?
-        """, (date_str, doctor["specialty"], doctor_id)).fetchone()
+            WHERE s.date = %s AND d.specialty = %s AND s.doctor_id != %s
+        """, (date_str, doctor["specialty"], doctor_id))
 
         if conflict:
-            conn.rollback()
             conn.close()
             return False, f"{conflict['full_name']} ({doctor['specialty']}) bu tarihte zaten nobetci."
 
-        # Insert or replace (if same doctor re-selects same date)
-        conn.execute(
-            "INSERT OR REPLACE INTO selections (doctor_id, date, duty_hours) VALUES (?, ?, ?)",
-            (doctor_id, date_str, duty_hours),
-        )
+        # Upsert: insert or update on conflict
+        execute(conn, """
+            INSERT INTO selections (doctor_id, date, duty_hours)
+            VALUES (%s, %s, %s)
+            ON CONFLICT (doctor_id, date) DO UPDATE SET duty_hours = EXCLUDED.duty_hours
+        """, (doctor_id, date_str, duty_hours))
         conn.commit()
         conn.close()
         return True, "Nobet secimi kaydedildi."
@@ -172,36 +197,31 @@ def remove_selection(doctor_id, date_str):
 
     # Check if month is finalized
     month_str = date_str[:7]
-    status = conn.execute(
-        "SELECT is_finalized FROM schedule_status WHERE month = ?", (month_str,)
-    ).fetchone()
+    status = query_one(conn,
+        "SELECT is_finalized FROM schedule_status WHERE month = %s", (month_str,))
     if status and status["is_finalized"]:
         conn.close()
         return False, "Bu ay icin nobet cizelgesi kesinlestirilmis."
 
-    result = conn.execute(
-        "DELETE FROM selections WHERE doctor_id = ? AND date = ?",
+    rowcount = execute(conn,
+        "DELETE FROM selections WHERE doctor_id = %s AND date = %s",
         (doctor_id, date_str),
     )
     conn.commit()
-    deleted = result.rowcount > 0
     conn.close()
-    if deleted:
+    if rowcount > 0:
         return True, "Nobet secimi kaldirildi."
     return False, "Secim bulunamadi."
 
 
 def finalize_month(year, month, doctor_id):
     """Finalize a doctor's selections for a month."""
-    month_str = f"{year}-{month:02d}"
+    month_str = f"{year}-{month:02d}%"
     conn = get_db()
-
-    # Mark doctor's selections as finalized
-    conn.execute("""
+    execute(conn, """
         UPDATE selections SET is_finalized = 1
-        WHERE doctor_id = ? AND date LIKE ?
-    """, (doctor_id, month_str + "%"))
-
+        WHERE doctor_id = %s AND date LIKE %s
+    """, (doctor_id, month_str))
     conn.commit()
     conn.close()
     return True, "Nobet cizelgeniz kesinlestirildi."
@@ -209,11 +229,11 @@ def finalize_month(year, month, doctor_id):
 
 def is_doctor_finalized(doctor_id, year, month):
     """Check if a doctor has finalized their selections for a month."""
-    month_str = f"{year}-{month:02d}"
+    month_str = f"{year}-{month:02d}%"
     conn = get_db()
-    row = conn.execute("""
+    row = query_one(conn, """
         SELECT COUNT(*) as cnt FROM selections
-        WHERE doctor_id = ? AND date LIKE ? AND is_finalized = 1
-    """, (doctor_id, month_str + "%")).fetchone()
+        WHERE doctor_id = %s AND date LIKE %s AND is_finalized = 1
+    """, (doctor_id, month_str))
     conn.close()
     return row["cnt"] > 0
