@@ -1,0 +1,480 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #f0f2f5;
+    color: #333;
+    min-height: 100vh;
+}
+
+/* Header */
+.header {
+    background: #1a5276;
+    color: white;
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.header h1 {
+    font-size: 1.4rem;
+    font-weight: 600;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.header-right .user-info {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.header-right .specialty-badge {
+    background: rgba(255,255,255,0.2);
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+}
+
+.btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.btn-primary {
+    background: #2980b9;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #2471a3;
+}
+
+.btn-success {
+    background: #27ae60;
+    color: white;
+}
+
+.btn-success:hover {
+    background: #219a52;
+}
+
+.btn-danger {
+    background: #c0392b;
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #a93226;
+}
+
+.btn-outline {
+    background: transparent;
+    color: white;
+    border: 1px solid rgba(255,255,255,0.5);
+}
+
+.btn-outline:hover {
+    background: rgba(255,255,255,0.1);
+}
+
+.btn-sm {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.8rem;
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Login */
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: calc(100vh - 60px);
+    padding: 2rem;
+}
+
+.login-box {
+    background: white;
+    padding: 2.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    width: 100%;
+    max-width: 400px;
+}
+
+.login-box h2 {
+    margin-bottom: 1.5rem;
+    color: #1a5276;
+    text-align: center;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.4rem;
+    font-weight: 500;
+    font-size: 0.9rem;
+    color: #555;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 0.7rem;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 1rem;
+    transition: border-color 0.2s;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #2980b9;
+    box-shadow: 0 0 0 3px rgba(41,128,185,0.1);
+}
+
+.login-box .btn {
+    width: 100%;
+    padding: 0.75rem;
+    margin-top: 0.5rem;
+    font-size: 1rem;
+}
+
+.error-msg {
+    color: #c0392b;
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+    text-align: center;
+}
+
+/* Main content */
+.main-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1.5rem;
+}
+
+.month-title {
+    text-align: center;
+    font-size: 1.6rem;
+    color: #1a5276;
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+/* Calendar grid */
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    margin-bottom: 1.5rem;
+}
+
+.calendar-header {
+    background: #1a5276;
+    color: white;
+    text-align: center;
+    padding: 0.6rem 0.3rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+    border-radius: 4px;
+}
+
+.calendar-cell {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    min-height: 100px;
+    padding: 0.4rem;
+    position: relative;
+    transition: all 0.2s;
+    cursor: default;
+}
+
+.calendar-cell.empty {
+    background: transparent;
+    border: none;
+}
+
+.calendar-cell.workday {
+    background: #ffffff;
+}
+
+.calendar-cell.weekend {
+    background: #f5f5f5;
+    border-color: #d0d0d0;
+}
+
+.calendar-cell.holiday {
+    background: #fff8e1;
+    border-color: #ffcc80;
+}
+
+.calendar-cell.selectable {
+    cursor: pointer;
+}
+
+.calendar-cell.selectable:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    transform: translateY(-1px);
+}
+
+.calendar-cell.selected-mine {
+    border: 2px solid #27ae60;
+    box-shadow: 0 0 0 2px rgba(39,174,96,0.2);
+}
+
+.calendar-cell.conflict {
+    border: 2px solid #e74c3c;
+}
+
+.day-number {
+    font-weight: 700;
+    font-size: 1rem;
+    color: #333;
+}
+
+.weekend .day-number,
+.holiday .day-number {
+    color: #c0392b;
+}
+
+.duty-badge {
+    position: absolute;
+    top: 0.3rem;
+    right: 0.3rem;
+    font-size: 0.65rem;
+    padding: 0.1rem 0.35rem;
+    border-radius: 8px;
+    font-weight: 600;
+}
+
+.duty-badge.duty-16 {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.duty-badge.duty-24 {
+    background: #fce4ec;
+    color: #c62828;
+}
+
+.holiday-name {
+    font-size: 0.65rem;
+    color: #e65100;
+    margin-top: 0.2rem;
+    line-height: 1.2;
+    font-weight: 500;
+}
+
+.assigned-doctors {
+    margin-top: 0.3rem;
+}
+
+.assigned-doctor {
+    font-size: 0.65rem;
+    padding: 0.15rem 0.3rem;
+    border-radius: 3px;
+    margin-bottom: 2px;
+    display: block;
+    line-height: 1.3;
+}
+
+.assigned-doctor.mine {
+    background: #e8f5e9;
+    color: #1b5e20;
+    font-weight: 600;
+}
+
+.assigned-doctor.other {
+    background: #e3f2fd;
+    color: #1565c0;
+}
+
+.assigned-doctor.same-specialty {
+    background: #fce4ec;
+    color: #b71c1c;
+}
+
+/* Action bar */
+.action-bar {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin: 1.5rem 0;
+    flex-wrap: wrap;
+}
+
+/* Preview table */
+.preview-section {
+    margin-top: 2rem;
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+}
+
+.preview-section h3 {
+    color: #1a5276;
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+}
+
+.preview-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+
+.preview-table th {
+    background: #1a5276;
+    color: white;
+    padding: 0.6rem;
+    text-align: center;
+    font-weight: 600;
+}
+
+.preview-table td {
+    padding: 0.5rem;
+    text-align: center;
+    border: 1px solid #e0e0e0;
+}
+
+.preview-table tr.workday-row td {
+    background: #ffffff;
+}
+
+.preview-table tr.holiday-row td,
+.preview-table tr.weekend-row td {
+    background: #f0f0f0;
+}
+
+.preview-table td.has-assignment {
+    font-weight: 600;
+    color: #1a5276;
+}
+
+/* Status messages */
+.status-bar {
+    text-align: center;
+    padding: 0.7rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    display: none;
+}
+
+.status-bar.success {
+    background: #e8f5e9;
+    color: #2e7d32;
+    display: block;
+}
+
+.status-bar.error {
+    background: #fce4ec;
+    color: #c62828;
+    display: block;
+}
+
+.status-bar.info {
+    background: #e3f2fd;
+    color: #1565c0;
+    display: block;
+}
+
+/* Finalized banner */
+.finalized-banner {
+    background: #e8f5e9;
+    border: 2px solid #27ae60;
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+    margin-bottom: 1rem;
+    font-weight: 600;
+    color: #1b5e20;
+}
+
+/* Legend */
+.legend {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    font-size: 0.8rem;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.legend-color {
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+    border: 1px solid #ccc;
+}
+
+.legend-color.workday { background: #ffffff; }
+.legend-color.weekend { background: #f5f5f5; }
+.legend-color.holiday { background: #fff8e1; }
+.legend-color.mine { background: #e8f5e9; border-color: #27ae60; }
+
+/* Toast notifications */
+.toast {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    padding: 0.8rem 1.5rem;
+    border-radius: 8px;
+    color: white;
+    font-weight: 500;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.3s;
+    z-index: 1000;
+}
+
+.toast.show {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.toast.success { background: #27ae60; }
+.toast.error { background: #c0392b; }
+.toast.info { background: #2980b9; }
+
+/* Responsive */
+@media (max-width: 768px) {
+    .calendar-cell {
+        min-height: 70px;
+        padding: 0.25rem;
+    }
+    .day-number { font-size: 0.85rem; }
+    .assigned-doctor { font-size: 0.6rem; }
+    .header { padding: 0.75rem 1rem; }
+    .header h1 { font-size: 1.1rem; }
+}

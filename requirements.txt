@@ -1,0 +1,3 @@
+Flask>=3.0
+hijridate>=2.5
+openpyxl>=3.1

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ICAP - Nobet Cizelgesi</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <header class="header">
+        <h1>ICAP Nobet Cizelgesi</h1>
+        <div class="header-right" id="headerRight" style="display:none;">
+            <span class="user-info" id="userName"></span>
+            <span class="specialty-badge" id="userSpecialty"></span>
+            <button class="btn btn-outline btn-sm" onclick="logout()">Cikis</button>
+        </div>
+    </header>
+
+    <!-- Login Screen -->
+    <div id="loginScreen" class="login-container">
+        <div class="login-box">
+            <h2>Doktor Girisi</h2>
+            <form onsubmit="login(event)">
+                <div class="form-group">
+                    <label for="username">Kullanici Adi</label>
+                    <input type="text" id="username" placeholder="ornek: drayse" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Sifre</label>
+                    <input type="password" id="password" placeholder="Sifreniz" required>
+                </div>
+                <button type="submit" class="btn btn-primary" id="loginBtn">Giris Yap</button>
+                <div class="error-msg" id="loginError"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="appScreen" style="display:none;">
+        <div class="main-content">
+            <div id="statusBar" class="status-bar"></div>
+            <div id="finalizedBanner" class="finalized-banner" style="display:none;">
+                Nobet cizelgeniz kesinlestirilmistir.
+            </div>
+
+            <h2 class="month-title" id="monthTitle"></h2>
+
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color workday"></div>
+                    <span>Is Gunu (16 saat)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color weekend"></div>
+                    <span>Hafta Sonu (24 saat)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color holiday"></div>
+                    <span>Resmi Tatil (24 saat)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color mine"></div>
+                    <span>Secimlerim</span>
+                </div>
+            </div>
+
+            <div class="calendar-grid" id="calendarGrid"></div>
+
+            <div class="action-bar" id="actionBar">
+                <button class="btn btn-primary" onclick="showPreview()">Onizleme</button>
+                <button class="btn btn-success" id="finalizeBtn" onclick="finalizeSelections()">Kesinlestir</button>
+                <button class="btn btn-primary" onclick="exportExcel()">Excel Indir</button>
+            </div>
+
+            <!-- Preview Section -->
+            <div id="previewSection" class="preview-section" style="display:none;">
+                <h3>Nobet Onizleme</h3>
+                <div id="previewContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="toast"></div>
+
+    <script>
+        const TARGET_YEAR = {{ target_year }};
+        const TARGET_MONTH = {{ target_month }};
+    </script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
