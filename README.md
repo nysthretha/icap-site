@@ -27,7 +27,7 @@ Hastane doktorlari icin aylik nobet planlama ve takip sistemi.
 ### Onizleme ve Kesinlestirme
 - Doktorlar secimlerini tablo formatinda onizleyebilir (tarihler satirlarda, uzmanliklar sutunlarda)
 - Onizleme tablosunun altinda her uzmanlik icin toplam saat gosterilir
-- Kesinlestirme sonrasi degisiklik yapilamaz
+- Kesinlestirme sonrasi "Kilidi Ac" butonu ile secimler tekrar duzenlenebilir
 
 ### Excel Ciktisi
 - Nobet cizelgesi Excel dosyasi olarak indirilebilir

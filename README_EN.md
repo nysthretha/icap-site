@@ -27,7 +27,7 @@ Monthly on-call duty planning and tracking system for hospital doctors.
 ### Preview and Finalization
 - Doctors can preview their selections in table format (dates as rows, specialties as columns)
 - Total hours per specialty are shown at the bottom of the preview table
-- No changes can be made after finalization
+- After finalization, doctors can unlock their selections via the "Unlock" button to make changes if needed
 
 ### Excel Export
 - The on-call schedule can be downloaded as an Excel file

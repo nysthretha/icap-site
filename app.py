@@ -4,7 +4,7 @@ from flask import Flask, request, jsonify, session, render_template, send_file
 from models import (
     init_db, seed_doctors, authenticate, get_doctor_by_id,
     get_all_doctors, get_selections_for_month, add_selection,
-    remove_selection, finalize_month, is_doctor_finalized,
+    remove_selection, finalize_month, unfinalize_month, is_doctor_finalized,
 )
 from holidays import get_holidays_for_month
 from export import generate_excel
@@ -159,6 +159,15 @@ def api_doctors():
 @login_required
 def api_finalize(year, month):
     success, message = finalize_month(year, month, session["doctor_id"])
+    if success:
+        return jsonify({"message": message})
+    return jsonify({"error": message}), 400
+
+
+@app.route("/api/unfinalize/<int:year>/<int:month>", methods=["POST"])
+@login_required
+def api_unfinalize(year, month):
+    success, message = unfinalize_month(year, month, session["doctor_id"])
     if success:
         return jsonify({"message": message})
     return jsonify({"error": message}), 400

@@ -227,6 +227,19 @@ def finalize_month(year, month, doctor_id):
     return True, "Nobet cizelgeniz kesinlestirildi."
 
 
+def unfinalize_month(year, month, doctor_id):
+    """Unfinalize a doctor's selections for a month so they can edit again."""
+    month_str = f"{year}-{month:02d}%"
+    conn = get_db()
+    execute(conn, """
+        UPDATE selections SET is_finalized = 0
+        WHERE doctor_id = %s AND date LIKE %s
+    """, (doctor_id, month_str))
+    conn.commit()
+    conn.close()
+    return True, "Nobet cizelgenizin kilidi acildi. Degisiklik yapabilirsiniz."
+
+
 def is_doctor_finalized(doctor_id, year, month):
     """Check if a doctor has finalized their selections for a month."""
     month_str = f"{year}-{month:02d}%"

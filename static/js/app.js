@@ -424,6 +424,36 @@ async function finalizeSelections() {
     }
 }
 
+// --- Unfinalize ---
+
+async function unfinalizeSelections() {
+    if (
+        !confirm(
+            "Kesinlestirmeyi geri almak istediginize emin misiniz?\n\nSecimlerinizi tekrar duzenleyebileceksiniz."
+        )
+    ) {
+        return;
+    }
+
+    try {
+        await api(`/api/unfinalize/${TARGET_YEAR}/${TARGET_MONTH}`, {
+            method: "POST",
+        });
+        showToast("Kilidi acildi, secimlerinizi duzenleyebilirsiniz.", "success");
+        currentUser.is_finalized = false;
+        document.getElementById("finalizedBanner").style.display = "none";
+        document.getElementById("finalizeBtn").disabled = false;
+        document.getElementById("finalizeBtn").textContent = "Kesinlestir";
+        // Refresh
+        selectionsData = await api(
+            `/api/selections/${TARGET_YEAR}/${TARGET_MONTH}`
+        );
+        renderCalendar();
+    } catch (e) {
+        showToast(e.message, "error");
+    }
+}
+
 // --- Export ---
 
 function exportExcel() {
