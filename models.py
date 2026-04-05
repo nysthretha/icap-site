@@ -76,6 +76,16 @@ def init_db():
             finalized_at TEXT
         );
     """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS snapshots (
+            id SERIAL PRIMARY KEY,
+            year INTEGER NOT NULL,
+            month INTEGER NOT NULL,
+            created_at TIMESTAMP DEFAULT NOW(),
+            excel_data BYTEA NOT NULL,
+            UNIQUE(year, month)
+        );
+    """)
     conn.commit()
     cur.close()
     conn.close()
@@ -238,6 +248,37 @@ def unfinalize_month(year, month, doctor_id):
     conn.commit()
     conn.close()
     return True, "Nobet cizelgenizin kilidi acildi. Degisiklik yapabilirsiniz."
+
+
+def save_snapshot(year, month, excel_bytes):
+    """Save or overwrite an Excel snapshot for a given month."""
+    conn = get_db()
+    execute(conn, """
+        INSERT INTO snapshots (year, month, excel_data)
+        VALUES (%s, %s, %s)
+        ON CONFLICT (year, month) DO UPDATE
+            SET excel_data = EXCLUDED.excel_data, created_at = NOW()
+    """, (year, month, psycopg2.Binary(excel_bytes)))
+    conn.commit()
+    conn.close()
+
+
+def list_snapshots():
+    """Return all snapshots ordered newest first (without binary data)."""
+    conn = get_db()
+    rows = query(conn,
+        "SELECT id, year, month, created_at FROM snapshots ORDER BY year DESC, month DESC")
+    conn.close()
+    return rows
+
+
+def get_snapshot(snapshot_id):
+    """Return a single snapshot including binary excel data."""
+    conn = get_db()
+    row = query_one(conn,
+        "SELECT id, year, month, excel_data FROM snapshots WHERE id = %s", (snapshot_id,))
+    conn.close()
+    return row
 
 
 def is_doctor_finalized(doctor_id, year, month):

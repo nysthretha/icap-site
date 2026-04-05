@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ICAP - Gecmis Kayitlar</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .records-container {
+            max-width: 700px;
+            margin: 40px auto;
+            padding: 0 16px;
+        }
+        .records-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+        .records-header h2 {
+            margin: 0;
+            flex: 1;
+        }
+        .records-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .records-table th {
+            background: #1a5276;
+            color: #fff;
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 600;
+        }
+        .records-table td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #eee;
+        }
+        .records-table tr:last-child td {
+            border-bottom: none;
+        }
+        .records-table tr:hover td {
+            background: #f4f8fb;
+        }
+        .empty-msg {
+            text-align: center;
+            color: #888;
+            padding: 48px 0;
+            font-size: 1.05em;
+        }
+        .not-logged-in {
+            text-align: center;
+            color: #c0392b;
+            padding: 48px 0;
+            font-size: 1.05em;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>ICAP Nobet Cizelgesi</h1>
+        <div style="display:flex; gap:8px; align-items:center;">
+            <a href="/" class="btn btn-outline btn-sm">Ana Sayfa</a>
+        </div>
+    </header>
+
+    <div class="records-container">
+        <div class="records-header">
+            <h2>Gecmis Aylik Kayitlar</h2>
+        </div>
+        <div id="content">
+            <p style="text-align:center; color:#888;">Yukleniyor...</p>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        function showToast(message, type = "info") {
+            const toast = document.getElementById("toast");
+            toast.textContent = message;
+            toast.className = "toast " + type;
+            toast.classList.add("show");
+            setTimeout(() => toast.classList.remove("show"), 3000);
+        }
+
+        async function loadRecords() {
+            const content = document.getElementById("content");
+            try {
+                const res = await fetch("/api/snapshots", { credentials: "same-origin" });
+                if (res.status === 401) {
+                    content.innerHTML = '<p class="not-logged-in">Bu sayfayi gorebilmek icin lutfen <a href="/">giris yapiniz</a>.</p>';
+                    return;
+                }
+                const snaps = await res.json();
+                if (snaps.length === 0) {
+                    content.innerHTML = '<p class="empty-msg">Henuz kayitli gecmis ayi cizelgesi bulunmuyor.</p>';
+                    return;
+                }
+
+                let html = `<table class="records-table">
+                    <thead><tr>
+                        <th>Ay</th>
+                        <th>Yil</th>
+                        <th>Kayit Tarihi</th>
+                        <th></th>
+                    </tr></thead><tbody>`;
+
+                snaps.forEach(s => {
+                    html += `<tr>
+                        <td>${s.month_name}</td>
+                        <td>${s.year}</td>
+                        <td>${s.created_at}</td>
+                        <td><a href="/api/snapshots/${s.id}" class="btn btn-primary btn-sm">Excel Indir</a></td>
+                    </tr>`;
+                });
+
+                html += "</tbody></table>";
+                content.innerHTML = html;
+            } catch (e) {
+                content.innerHTML = '<p class="not-logged-in">Kayitlar yuklenirken bir hata olustu.</p>';
+            }
+        }
+
+        loadRecords();
+    </script>
+</body>
+</html>

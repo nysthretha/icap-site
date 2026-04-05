@@ -29,6 +29,11 @@ Monthly on-call duty planning and tracking system for hospital doctors.
 - Total hours per specialty are shown at the bottom of the preview table
 - After finalization, doctors can unlock their selections via the "Unlock" button to make changes if needed
 
+### Past Records
+- At 23:50 on the last day of each month, the schedule is automatically saved as a snapshot
+- Saved schedules are listed on the "Past Records" page
+- Each record can be downloaded as an Excel file
+
 ### Excel Export
 - The on-call schedule can be downloaded as an Excel file
 - Specialties as columns, dates as rows

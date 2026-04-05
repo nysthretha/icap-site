@@ -1,10 +1,14 @@
+import io
 import os
 from datetime import date
 from flask import Flask, request, jsonify, session, render_template, send_file
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.cron import CronTrigger
 from models import (
     init_db, seed_doctors, authenticate, get_doctor_by_id,
     get_all_doctors, get_selections_for_month, add_selection,
     remove_selection, finalize_month, unfinalize_month, is_doctor_finalized,
+    save_snapshot, list_snapshots, get_snapshot,
 )
 from holidays import get_holidays_for_month
 from export import generate_excel
@@ -16,6 +20,21 @@ app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key-change-in-producti
 with app.app_context():
     init_db()
     seed_doctors()
+
+
+# --- Scheduler ---
+
+def take_monthly_snapshot():
+    """Take an Excel snapshot of the current scheduling month."""
+    with app.app_context():
+        year, month = get_next_month()
+        output = generate_excel(year, month)
+        save_snapshot(year, month, output.read())
+
+
+scheduler = BackgroundScheduler()
+scheduler.add_job(take_monthly_snapshot, CronTrigger(day="last", hour=23, minute=50))
+scheduler.start()
 
 
 def get_next_month():
@@ -45,6 +64,11 @@ def login_required(f):
 def index():
     year, month = get_next_month()
     return render_template("index.html", target_year=year, target_month=month)
+
+
+@app.route("/records")
+def records():
+    return render_template("records.html")
 
 
 # --- Auth API ---
@@ -171,6 +195,48 @@ def api_unfinalize(year, month):
     if success:
         return jsonify({"message": message})
     return jsonify({"error": message}), 400
+
+
+# --- Snapshots API ---
+
+@app.route("/api/snapshots")
+@login_required
+def api_list_snapshots():
+    turkish_months = [
+        "", "Ocak", "Subat", "Mart", "Nisan", "Mayis", "Haziran",
+        "Temmuz", "Agustos", "Eylul", "Ekim", "Kasim", "Aralik"
+    ]
+    snaps = list_snapshots()
+    result = []
+    for s in snaps:
+        result.append({
+            "id": s["id"],
+            "year": s["year"],
+            "month": s["month"],
+            "month_name": turkish_months[s["month"]],
+            "created_at": s["created_at"].strftime("%d.%m.%Y %H:%M") if s["created_at"] else "",
+        })
+    return jsonify(result)
+
+
+@app.route("/api/snapshots/<int:snap_id>")
+@login_required
+def api_download_snapshot(snap_id):
+    turkish_months = [
+        "", "Ocak", "Subat", "Mart", "Nisan", "Mayis", "Haziran",
+        "Temmuz", "Agustos", "Eylul", "Ekim", "Kasim", "Aralik"
+    ]
+    snap = get_snapshot(snap_id)
+    if not snap:
+        return jsonify({"error": "Kayit bulunamadi."}), 404
+    output = io.BytesIO(bytes(snap["excel_data"]))
+    filename = f"Nobet_{turkish_months[snap['month']]}_{snap['year']}.xlsx"
+    return send_file(
+        output,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        as_attachment=True,
+        download_name=filename,
+    )
 
 
 # --- Export API ---

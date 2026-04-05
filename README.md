@@ -29,6 +29,11 @@ Hastane doktorlari icin aylik nobet planlama ve takip sistemi.
 - Onizleme tablosunun altinda her uzmanlik icin toplam saat gosterilir
 - Kesinlestirme sonrasi "Kilidi Ac" butonu ile secimler tekrar duzenlenebilir
 
+### Gecmis Kayitlar
+- Her ayin son gunu saat 23:50'de o ayin nobet cizelgesi otomatik olarak kaydedilir
+- Kaydedilen cizelgeler "Gecmis Kayitlar" sayfasinda listelenir
+- Her kayit Excel dosyasi olarak indirilebilir
+
 ### Excel Ciktisi
 - Nobet cizelgesi Excel dosyasi olarak indirilebilir
 - Uzmanliklar sutunlarda, tarihler satirlarda gosterilir

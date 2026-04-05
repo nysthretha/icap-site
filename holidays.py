@@ -3,6 +3,12 @@ from datetime import date, timedelta
 from hijridate import Hijri, Gregorian
 
 # Fixed Turkish public holidays (month, day, name)
+# Government-declared administrative holidays (year, month, day, name)
+ADMINISTRATIVE_HOLIDAYS = [
+    (2026, 5, 25, "Idari Tatil"),
+    (2026, 5, 26, "Idari Tatil"),
+]
+
 FIXED_HOLIDAYS = [
     (1, 1, "Yilbasi"),
     (4, 23, "Ulusal Egemenlik ve Cocuk Bayrami"),
@@ -85,6 +91,12 @@ def get_holidays_for_month(year, month):
     # Islamic holidays for this year
     islamic = get_islamic_holidays(year)
 
+    # Administrative holiday lookup for this month
+    admin = {}
+    for ay, am, ad, aname in ADMINISTRATIVE_HOLIDAYS:
+        if ay == year and am == month:
+            admin[date(year, am, ad)] = aname
+
     num_days = calendar.monthrange(year, month)[1]
     days = []
 
@@ -94,7 +106,16 @@ def get_holidays_for_month(year, month):
         day_name = turkish_days[weekday]
         is_weekend = weekday >= 5  # Saturday=5, Sunday=6
 
-        holiday_name = fixed.get(d) or islamic.get(d)
+        base_holiday = fixed.get(d) or islamic.get(d)
+        admin_label = admin.get(d)
+
+        if admin_label and base_holiday:
+            holiday_name = f"{admin_label}+{base_holiday}"
+        elif admin_label:
+            holiday_name = admin_label
+        else:
+            holiday_name = base_holiday
+
         is_holiday = holiday_name is not None
 
         if is_holiday:
