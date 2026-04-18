@@ -1,3 +1,4 @@
+import json
 import os
 import psycopg2
 import psycopg2.extras
@@ -91,29 +92,47 @@ def init_db():
     conn.close()
 
 
+def load_doctor_roster():
+    """Read the doctor roster from DOCTORS_JSON env var, or doctors.json file.
+
+    Returns a list of dicts with keys: username, password, full_name, specialty.
+    Returns an empty list if neither source is available.
+    """
+    env_json = os.environ.get("DOCTORS_JSON")
+    if env_json:
+        return json.loads(env_json)
+
+    file_path = os.path.join(os.path.dirname(__file__), "doctors.json")
+    if os.path.exists(file_path):
+        with open(file_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+
+    return []
+
+
 def seed_doctors():
-    """Insert sample doctors if the table is empty."""
+    """Insert any doctors from the roster that don't already exist by username.
+
+    Existing doctors (matched by username) are left untouched so their IDs and
+    linked selections are preserved.
+    """
+    roster = load_doctor_roster()
+    if not roster:
+        return
+
     conn = get_db()
-    row = query_one(conn, "SELECT COUNT(*) as count FROM doctors")
-    if row["count"] == 0:
-        doctors = [
-            ("kkurt", "nobet2026", "Kemal Kurt", "Dahiliye"),
-            ("aaltintas", "icap2026", "Ayfer Altintas", "Dahiliye"),
-            ("mgakkaya", "ortopedi26", "Mahmut Gokhan Akkaya", "Ortopedi"),
-            ("kyagmuroglu", "kadir2026", "Kadir Yagmuroglu", "Ortopedi"),
-            ("bgatacer", "gogus2026", "Basak Gonen Atacer", "Gogus"),
-            ("moatacer", "uroloji26", "Mustafa Ozan Atacer", "Uroloji"),
-            ("meyesilnacar", "anestezi26", "Merve Ezgi Yesilnacar", "Anestezi"),
-            ("mosuner", "cerrahi26", "Mert Orhan Suner", "G.Cerrahi"),
-            ("myorulmaz", "psikiyatri26", "Mehmet Yorulmaz", "Psikiyatri"),
-            ("aatsiz", "acil2026", "Ahmet Atsiz", "Acil"),
-        ]
-        for username, password, full_name, specialty in doctors:
-            execute(conn,
-                "INSERT INTO doctors (username, password_hash, full_name, specialty) VALUES (%s, %s, %s, %s)",
-                (username, generate_password_hash(password), full_name, specialty),
-            )
-        conn.commit()
+    for entry in roster:
+        username = entry["username"]
+        existing = query_one(conn,
+            "SELECT id FROM doctors WHERE username = %s", (username,))
+        if existing:
+            continue
+        execute(conn,
+            "INSERT INTO doctors (username, password_hash, full_name, specialty) VALUES (%s, %s, %s, %s)",
+            (username, generate_password_hash(entry["password"]),
+             entry["full_name"], entry["specialty"]),
+        )
+    conn.commit()
     conn.close()
 
 

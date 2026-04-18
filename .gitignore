@@ -7,6 +7,9 @@ venv/
 # Local notes
 changing_doctors.txt
 
+# Private doctor roster with credentials
+doctors.json
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
